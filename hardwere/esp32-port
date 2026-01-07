@@ -1,26 +1,38 @@
-#include <DHT.h>
+#include <DHT.h> // Biblioteca para o sensor DHT
 
+// Definições do sensor DHT
 #define DHTPIN 4
 #define DHTTYPE DHT22
 
-DHT dht(DHTPIN, DHTTYPE);
+DHT dht(DHTPIN, DHTTYPE); // Inicializa o sensor DHT junto ao pino definido
 
-void setup() {
-  Serial.begin(115200);
-  dht.begin();
+// Configuração inicial
+void setup()
+{
+    Serial.begin(115200);
+    dht.begin();
 }
 
-void loop() {
-  float temperatura = dht.readTemperature();
+// Loop principal
+void loop()
+{
+    float temperatura = dht.readTemperature(); // Lê a temperatura
+    float umidade = dht.readHumidity(); // Lê a umidade
 
-  if (isnan(temperatura)){
-    Serial.println("Erro na leitura do sensor");
-  }else{
-    Serial.println("Temperatura: ");
-    Serial.println(temperatura);
-    Serial.println(" °C");
-  }
-  
-  delay(2000);
+    if (isnan(temperatura))
+    {
+        Serial.println("Erro na leitura do sensor");
+    }
+    else
+    {
+        Serial.println("Temperatura: ");
+        Serial.println(temperatura);
+        Serial.println(" °C");
 
+        Serial.println("Umidade: ");
+        Serial.println(umidade);
+        Serial.println(" %");
+    }
+
+    delay(2000); // Aguarda 2 segundos antes da próxima leitura
 }
