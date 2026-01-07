@@ -1,0 +1,13 @@
+# Ignorar arquivos temporários do Python
+__pycache__/
+*.py[cod]
+
+# Ignorar ambiente virtual
+venv/
+.env
+
+# Ignorar banco de dados local 
+*.db
+
+# Ignorar arquivos de sistema
+.DS_Store
