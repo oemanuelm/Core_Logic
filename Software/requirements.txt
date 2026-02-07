@@ -1,5 +1,3 @@
-flask
 paho-mqtt
 psutil
 pyserial
-wmi
