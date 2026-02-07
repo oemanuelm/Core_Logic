@@ -75,7 +75,7 @@ pip install -r requirements.txt
 ## 3. Configuração da Nuvem (ThingsBoard)
    1. Crie um dispositivo no ThingsBoard Cloud
    2. Copie o Access Token.
-   3. Edite o arquivo gateway_real.py:
+   3. Edite o arquivo gateway_final.py:
 
 ```python
 THINGSBOARD_HOST = "thingsboard.cloud"
