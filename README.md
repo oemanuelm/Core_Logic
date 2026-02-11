@@ -24,25 +24,42 @@ O **CoreSense** resolve o problema da "cegueira de diagnóstico". Ele cruza dado
 O sistema utiliza uma abordagem de **Edge Computing**. O script Python atua como Gateway, fundindo dados do Hardware (Serial) com dados do Kernel (OS) antes de enviar para a nuvem.
 
 ```mermaid
-graph LR
-    subgraph Hardware ["📍 Camada Física"]
-        A[Sensor DHT11] -- "Dados Brutos" --> B(ESP32)
-        B -- "Serial / USB" --> C{PC Gateway}
+graph TD
+    %% Definição dos Nós e Estilos
+    subgraph Hardware ["📍 Camada Física (ESP32)"]
+        DHT[Sensor DHT11/22]
+        ESP[Microcontrolador ESP32]
+        LED((LED Alerta))
     end
 
-    subgraph Software ["💻 Camada de Borda (Python)"]
-        C -- "Leitura OS" --> D[CPU Temp]
-        B -- "Leitura Serial" --> E[Ambiente Temp]
-        D & E --> F[Fusão de Dados]
+    subgraph Gateway ["💻 Gateway Local (Python)"]
+        OS[Sistema Operacional]
+        SCRIPT[Script gateway.py]
+        LOGIC{Lógica de Alerta}
     end
 
     subgraph Cloud ["☁️ Nuvem (ThingsBoard)"]
-        F -- "MQTT (JSON)" --> G((ThingsBoard))
-        G --> H[Dashboard & Alertas]
+        TB[Plataforma ThingsBoard]
+        DASH[Dashboard & Gráficos]
     end
 
-    style A fill:#f9f,stroke:#333
-    style G fill:#dfd,stroke:#333
+    %% Fluxo de DADOS (Ida)
+    DHT -- "Temp/Umid" --> ESP
+    ESP == "Serial USB (CSV)" ==> SCRIPT
+    OS -- "CPU Temp (psutil)" --> SCRIPT
+    SCRIPT --> LOGIC
+    LOGIC -- "MQTT (JSON)" --> TB
+    TB --> DASH
+
+    %% Fluxo de CONTROLE (Volta)
+    LOGIC -.-> |"Comando 'A' (>80°C)"| ESP
+    ESP -.-> |"GPIO 2 (HIGH)"| LED
+
+    %% Estilização (Cores)
+    style ESP fill:#ff9900,stroke:#333,stroke-width:2px,color:black
+    style SCRIPT fill:#61dafb,stroke:#333,stroke-width:2px,color:black
+    style TB fill:#00cc66,stroke:#333,stroke-width:2px, color:black
+    style LED fill:#ff3333,stroke:#333,stroke-width:2px,color:black
 ```
 
 ### ✨ Principais Funcionalidades
