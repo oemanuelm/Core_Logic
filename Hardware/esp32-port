@@ -1,40 +1,51 @@
-#include <DHT.h> // Biblioteca para o sensor DHT
+#include <DHT.h>  // Biblioteca para o sensor DHT
 
 // Definições do sensor DHT
 #define DHTPIN 4
 #define DHTTYPE DHT22
 
-DHT dht(DHTPIN, DHTTYPE); // Inicializa o sensor DHT junto ao pino definido
+DHT dht(DHTPIN, DHTTYPE);  // Inicializa o sensor DHT junto ao pino definido
+
+#define LED_BUILTIN 2  // Led interno
+
 
 // Configuração inicial
-void setup()
-{
-    Serial.begin(115200);
-    dht.begin();
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);  // começa desligado
 }
 
 // Loop principal
-void loop()
-{
-    float temperatura = dht.readTemperature(); // Lê a temperatura
-    float umidade = dht.readHumidity(); // Lê a umidade
+void loop() {
+  float temperatura = dht.readTemperature();
+  float umidade = dht.readHumidity();
 
-    if (isnan(temperatura))
-    {
-        Serial.println("Erro na leitura do sensor");
+  if (isnan(temperatura) || isnan(umidade)) {
+    return;  // ignora leitura inválida
+  }
+
+  // ENVIA JSON
+  Serial.print("{\"temp_amb\":");
+  Serial.print(temperatura);
+  Serial.print(",\"umidade\":");
+  Serial.print(umidade);
+  Serial.println("}");
+
+  // --- RECEBER COMANDO DO PYTHON ---
+  if (Serial.available() > 0) {
+    char comando = Serial.read();
+
+    if (comando == 'R') {
+      digitalWrite(LED_BUILTIN, HIGH);  // ALERTA
+    } else if (comando == 'N') {
+      digitalWrite(LED_BUILTIN, LOW);  // NORMAL
     }
-    else
-    {
-        Serial.print("Temperatura: ");
-        Serial.print(temperatura);
-        Serial.println(" °C");
+  }
 
-        Serial.print("Umidade: ");
-        Serial.print(umidade);
-        Serial.println(" %");
-    }
-
-    delay(2000); // Aguarda 2 segundos antes da próxima leitura
+  delay(2000);  // Aguarda 2 segundos antes da próxima leitura
 }
 
 
@@ -43,6 +54,6 @@ void loop()
    - Conecte o VCC do DHT22 ao 3.3V do ESP32
    - Conecte o GND do DHT22 ao GND do ESP32
 
-   observação: Adicione um resistor pull-up de 10k ohms 
+   observação: Adicione um resistor pull-up de 10k ohms
    entre o pino de dados e o VCC para melhor estabilidade da leitura se necessário
 */

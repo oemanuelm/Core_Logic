@@ -6,8 +6,8 @@ import paho.mqtt.client as mqtt
 
 # --- CONFIGURAÇÕES ---
 THINGSBOARD_HOST = "thingsboard.cloud" 
-ACCESS_TOKEN = "o3qyqdPdKAn3wEMaw2u5"  # <--- INSIRA SEU TOKEN DE DISPOSITIVO DO THINGSBOARD
-SERIAL_PORT = "COM3"   # <--- CONFIRA SUA PORTA CONECTADA AO ESP32 (No Linux: /dev/ttyUSB0)         
+ACCESS_TOKEN = "o3qyqdPdKAn3wEMaw2u5" # <--- INSIRA SEU TOKEN DE DISPOSITIVO DO THINGSBOARD
+SERIAL_PORT = "COM5"   # <--- CONFIRA SUA PORTA CONECTADA AO ESP32 (No Linux: /dev/ttyUSB0)         
 BAUD_RATE = 115200
 
 # Limite de Alerta (Se CPU passar disso, acende o LED no ESP32)
