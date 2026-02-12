@@ -1,59 +1,58 @@
-#include <DHT.h>  // Biblioteca para o sensor DHT
+/*
+ * CORESENSE FIRMWARE - TESTE EXPERIMENTAL
+ * Função: Ler DHT11/22 e controlar LED de Alerta via Serial
+ */
 
-// Definições do sensor DHT
-#define DHTPIN 4
-#define DHTTYPE DHT22
+#include <DHT.h>
 
-DHT dht(DHTPIN, DHTTYPE);  // Inicializa o sensor DHT junto ao pino definido
+// --- CONFIGURAÇÕES ---
+#define DHTPIN 4       // Pino de dados do Sensor
+#define DHTTYPE DHT22  
+#define LED_BUILTIN 2      // LED Integrado do ESP32 
 
-#define LED_BUILTIN 2  // Led interno
+DHT dht(DHTPIN, DHTTYPE);
 
-
-// Configuração inicial
+//Configuração inicial
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(115200); // Velocidade da Serial
   dht.begin();
-  
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);  // começa desligado
+  
+  // Teste de LED na inicialização (Pisca 3x)
+  for(int i=0; i<3; i++) {
+    digitalWrite(LED_BUILTIN, HIGH); delay(100);
+    digitalWrite(LED_BUILTIN, LOW);  delay(100);
+  }
 }
 
-// Loop principal
 void loop() {
+  // 1. LEITURA (Tratamento de erro incluso)
   float temperatura = dht.readTemperature();
   float umidade = dht.readHumidity();
 
-  if (isnan(temperatura) || isnan(umidade)) {
-    return;  // ignora leitura inválida
-  }
+  // Se o sensor falhar, envia 0.0 para não travar o Python
+  if (isnan(temperatura)) temperatura = 0.0;
+  if (isnan(umidade)) umidade = 0.0;
 
-  // ENVIA JSON
+  // 2. ENVIA JSON PARA O PC
+  // Formato: {"temp_amb": 25.0, "umidade": 60.0}
   Serial.print("{\"temp_amb\":");
   Serial.print(temperatura);
   Serial.print(",\"umidade\":");
   Serial.print(umidade);
-  Serial.println("}");
+  Serial.println("}"); // Pula linha para indicar fim da mensagem
 
-  // --- RECEBER COMANDO DO PYTHON ---
+  // 3. LER COMANDOS DO PC (Controle do LED)
   if (Serial.available() > 0) {
     char comando = Serial.read();
-
+    
     if (comando == 'R') {
-      digitalWrite(LED_BUILTIN, HIGH);  // ALERTA
-    } else if (comando == 'N') {
-      digitalWrite(LED_BUILTIN, LOW);  // NORMAL
+      digitalWrite(LED_BUILTIN, HIGH); // R = Risco (Liga LED)
+    } 
+    else if (comando == 'N') {
+      digitalWrite(LED_BUILTIN, LOW);  // N = Normal (Desliga LED)
     }
   }
 
-  delay(2000);  // Aguarda 2 segundos antes da próxima leitura
+  delay(2000); // Espera 2 segundos (Ciclo do DHT)
 }
-
-
-/* Montagem do circuito:
-   - Conecte o pino de dados do DHT22 ao pino 4 do ESP32
-   - Conecte o VCC do DHT22 ao 3.3V do ESP32
-   - Conecte o GND do DHT22 ao GND do ESP32
-
-   observação: Adicione um resistor pull-up de 10k ohms
-   entre o pino de dados e o VCC para melhor estabilidade da leitura se necessário
-*/
