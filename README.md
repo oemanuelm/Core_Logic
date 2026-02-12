@@ -1,22 +1,72 @@
-# 🌡️ CoreSense: Sistema de Telemetria Térmica Integrado
+# 🌡️ CoreSense: Monitoramento Térmico Híbrido (IoT)
 
 ![Status](https://img.shields.io/badge/Status-Finalizado-success)
 ![Hardware](https://img.shields.io/badge/ESP32-Serial-blue)
-![Backend](https://img.shields.io/badge/Python-3.x-yellow)
+![Backend](https://img.shields.io/badge/Python-3.8%2B-yellow)
 ![Cloud](https://img.shields.io/badge/IoT-ThingsBoard-orange)
 
-> **Resumo:** Sistema IoT para correlação de temperatura interna (CPU) e externa (Ambiente) voltado para manutenção preditiva em Data Centers.
+> **Resumo:** Sistema de telemetria Full-Stack que correlaciona temperatura de processamento (CPU) e ambiental (Sala) para manutenção preditiva em Data Centers.
 
 ---
 
-## 📖 Sobre o Projeto
-O **CoreSense** resolve o problema da "cegueira de diagnóstico" em computadores de alto desempenho. Ele cruza dados de sensores físicos e lógicos para determinar se um superaquecimento é causado por falha no hardware (ex: pasta térmica seca) ou por saturação do ar-condicionado da sala.
+## 📸 Visão Geral do Projeto
+
+O **CoreSense** resolve o problema da "cegueira de diagnóstico". Ele cruza dados de sensores físicos e lógicos para determinar, via **Diferencial Térmico (Delta T)**, se um superaquecimento é causado por falha no hardware interno (cooler parado) ou por falha ambiental (ar-condicionado desligado).
+
+### 🖥️ Dashboard (ThingsBoard)
+![Dashboard CoreSense](https://via.placeholder.com/800x450?text=Insira+Aqui+o+Print+do+Seu+Dashboard)
+*(Interface Dark Mode com indicadores Neon para fácil leitura em NOCs)*
+
+---
+
+## 🔄 Arquitetura do Sistema
+
+O sistema utiliza uma abordagem de **Edge Computing**. O script Python atua como Gateway, fundindo dados do Hardware (Serial) com dados do Kernel (OS) antes de enviar para a nuvem.
+
+```mermaid
+graph TD
+    %% Definição dos Nós e Estilos
+    subgraph Hardware ["📍 Camada Física (ESP32)"]
+        DHT[Sensor DHT11/22]
+        ESP[Microcontrolador ESP32]
+        LED((LED Alerta))
+    end
+
+    subgraph Gateway ["💻 Gateway Local (Python)"]
+        OS[Sistema Operacional]
+        SCRIPT[Script gateway.py]
+        LOGIC{Lógica de Alerta}
+    end
+
+    subgraph Cloud ["☁️ Nuvem (ThingsBoard)"]
+        TB[Plataforma ThingsBoard]
+        DASH[Dashboard & Gráficos]
+    end
+
+    %% Fluxo de DADOS (Ida)
+    DHT -- "Temp/Umid" --> ESP
+    ESP == "Serial USB (CSV)" ==> SCRIPT
+    OS -- "CPU Temp (psutil)" --> SCRIPT
+    SCRIPT --> LOGIC
+    LOGIC -- "MQTT (JSON)" --> TB
+    TB --> DASH
+
+    %% Fluxo de CONTROLE (Volta)
+    LOGIC -.-> |"Comando 'A' (>80°C)"| ESP
+    ESP -.-> |"GPIO 2 (HIGH)"| LED
+
+    %% Estilização (Cores)
+    style ESP fill:#ff9900,stroke:#333,stroke-width:2px,color:black
+    style SCRIPT fill:#61dafb,stroke:#333,stroke-width:2px,color:black
+    style TB fill:#00cc66,stroke:#333,stroke-width:2px, color:black
+    style LED fill:#ff3333,stroke:#333,stroke-width:2px,color:black
+```
 
 ### ✨ Principais Funcionalidades
-* **Monitoramento Híbrido:** Leitura simultânea do sensor DHT22 (Ambiente) e Kernel do Sistema Operacional (CPU).
-* **Arquitetura Serial Gateway:** Elimina a instabilidade do Wi-Fi no microcontrolador, usando conexão USB robusta para dados e energia.
-* **Feedback Físico Reativo:** O ESP32 acende um **LED de Alerta** automaticamente se a CPU do PC ultrapassar **80°C**.
-* **Dashboard em Nuvem:** Visualização em tempo real via ThingsBoard com gráficos de correlação.
+* **Monitoramento Híbrido:** Leitura simultânea do sensor DHT11/22 (Ambiente) e psutil (CPU).
+* **Conexão Serial Robusta:** Elimina a instabilidade do Wi-Fi no microcontrolador, usando conexão USB robusta para dados e energia.
+* **Feedback Físico Reativo:** O ESP32 utiliza o **LED Integrado (GPIO 2)** para piscar fisicamente caso a CPU do PC ultrapasse o limite crítico de **80°C.**
+* **Análise de Tendência:** Gráfico de séries temporais para correlação de falhas.
 
 ---
 
@@ -24,10 +74,9 @@ O **CoreSense** resolve o problema da "cegueira de diagnóstico" em computadores
 
 ### Lista de Componentes
 * Microcontrolador **ESP32 DevKit V1**
-* Sensor de Temperatura/Umidade **DHT22** (AM2302)
-* LED Vermelho (Indicador de Alerta)
-* Resistor 220Ω ou 300
+* Sensor de Temperatura/Umidade **DHT11** ou **DHT22** 
 * Cabo Micro-USB de dados
+* (Opcional) LED Externo + Resistor 220Ω
 
 ### Esquema de Ligação (Wiring)
 
@@ -59,39 +108,37 @@ O **CoreSense** resolve o problema da "cegueira de diagnóstico" em computadores
 ## 🚀 Instalação e Execução
 ## 1. Preparação do Hardware (ESP32)
 
-* Instale a Arduino IDE.
-* Adicione a biblioteca "DHT sensor library" (por Adafruit).
-* Carregue o código da pasta /Firmware_ESP32 para a placa.
+* Instale a **Arduino IDE**.
+* Instale a biblioteca DHT sensor library (por Adafruit).
+* Carregue o código da pasta /Hardware para a placa.
 
-        Nota: Não é necessário configurar Wi-Fi no código.
+          Nota: Não é necessário configurar Wi-Fi no código do ESP32.
 
-## 2. Preparação do Gateway (Computador)
-Certifique-se de ter o Python instalado. No terminal:
+## 2.Gateway (Python)
+Certifique-se de ter o Python 3.8+ instalado.
 
 ```bash
-cd Gateway_Python
+cd Software
 pip install -r requirements.txt
 ```
-## 3. Configuração da Nuvem (ThingsBoard)
+## 3. Configuração (ThingsBoard)
    1. Crie um dispositivo no ThingsBoard Cloud
    2. Copie o Access Token.
-   3. Edite o arquivo gateway_final.py:
+   3. Edite o arquivo gateway.py:
 
 ```python
 THINGSBOARD_HOST = "thingsboard.cloud"
 ACCESS_TOKEN = "SEU_TOKEN_AQUI"  # <--- Cole seu token
-SERIAL_PORT = "COM3"             # <--- Ajuste sua porta USB
+SERIAL_PORT = "COM3"             # <--- Verifique no Gerenciador de Dispositivos
 ```
 ## 4. Rodando o Projeto
 
 Com o ESP32 conectado à USB, execute:
 
 ```
-python gateway_final.py
+python gateway.py
 ```
-Você verá o log no terminal:
-
-    Enviado: CPU 45.0°C | Amb 24.5°C | NORMAL (LED OFF)
+Output esperado: ```[ENVIADO] CPU: 45.0°C | Amb: 24.5°C | LED: NORMAL```
     
 ## 📊 Visualização
 
